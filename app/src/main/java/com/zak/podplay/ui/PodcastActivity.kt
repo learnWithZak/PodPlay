@@ -1,6 +1,7 @@
 package com.zak.podplay.ui
 
 import android.app.SearchManager
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -19,14 +20,6 @@ class PodcastActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_podcast)
-
-        val itunesService = ItunesService.instance
-        val itunesRepo = ItunesRepo(itunesService)
-
-        GlobalScope.launch {
-            val results = itunesRepo.searchByTerm("Android Developer")
-            Log.i(TAG, "Results = ${results.body()}")
-        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -37,6 +30,29 @@ class PodcastActivity : AppCompatActivity() {
         val searchManager = getSystemService(SEARCH_SERVICE) as SearchManager
         searchView.setSearchableInfo(searchManager.getSearchableInfo(componentName))
         return true
-
     }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent) {
+        if (Intent.ACTION_SEARCH == intent.action) {
+            val query = intent.getStringExtra(SearchManager.QUERY) ?: return
+            performSearch(query)
+        }
+    }
+
+    private fun performSearch(term: String) {
+        val itunesService = ItunesService.instance
+        val itunesRepo = ItunesRepo(itunesService)
+
+        GlobalScope.launch {
+            val results = itunesRepo.searchByTerm(term)
+            Log.i(TAG, "Results = ${results.body()}")
+        }
+    }
+
 }
