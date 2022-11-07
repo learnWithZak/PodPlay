@@ -8,6 +8,7 @@ import android.util.Log
 import android.view.Menu
 import androidx.appcompat.widget.SearchView
 import com.zak.podplay.R
+import com.zak.podplay.databinding.ActivityPodcastBinding
 import com.zak.podplay.repository.ItunesRepo
 import com.zak.podplay.service.ItunesService
 import kotlinx.coroutines.GlobalScope
@@ -16,10 +17,13 @@ import kotlinx.coroutines.launch
 class PodcastActivity : AppCompatActivity() {
 
     val TAG = javaClass.simpleName
+    private lateinit var binding: ActivityPodcastBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_podcast)
+        binding = ActivityPodcastBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        setupToolbar()
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -53,6 +57,10 @@ class PodcastActivity : AppCompatActivity() {
             val results = itunesRepo.searchByTerm(term)
             Log.i(TAG, "Results = ${results.body()}")
         }
+    }
+
+    private fun setupToolbar() {
+        setSupportActionBar(binding.toolbar)
     }
 
 }
