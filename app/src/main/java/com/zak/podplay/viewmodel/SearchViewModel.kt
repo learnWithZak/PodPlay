@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import com.zak.podplay.repository.ItunesRepo
 import com.zak.podplay.service.PodcastResponse
+import com.zak.podplay.util.DateUtils
+import com.zak.podplay.util.DateUtils.jsonDateToShortDate
 
 class SearchViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -19,7 +21,7 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
     private fun itunesPodcastToPodcastSummaryView(itunesPodcast: PodcastResponse.ItunesPodcast): PodcastSummaryViewData {
         return PodcastSummaryViewData(
             itunesPodcast.collectionCensoredName,
-            itunesPodcast.releaseDate,
+            jsonDateToShortDate(itunesPodcast.releaseDate),
             itunesPodcast.artworkUrl30,
             itunesPodcast.feedUrl
         )
