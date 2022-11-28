@@ -47,7 +47,11 @@ class RssFeedService private constructor() {
                 null
             } else {
                 val rssFeedResponse: RssFeedResponse? = null
-                println(result.body()?.string())
+                val dbFactory = DocumentBuilderFactory.newInstance()
+                val dBuilder = dbFactory.newDocumentBuilder()
+                withContext(Dispatchers.IO) {
+                    val doc = dBuilder.parse(result.body()?.byteStream())
+                }
                 rssFeedResponse
             }
         } catch (t: Throwable) {
