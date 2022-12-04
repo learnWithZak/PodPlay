@@ -19,7 +19,7 @@ import javax.xml.parsers.DocumentBuilderFactory
 /**
  * RssFeedService to process RSS feed
  */
-class FeedService private constructor() {
+class RssFeedService private constructor() {
 
     suspend fun getFeed(xmlFileURL: String): RssFeedResponse? {
         val service: FeedService
@@ -108,8 +108,8 @@ class FeedService private constructor() {
         }
     }
     companion object {
-        val instance: FeedService by lazy {
-            FeedService()
+        val instance: RssFeedService by lazy {
+            RssFeedService()
         }
     }
 }
