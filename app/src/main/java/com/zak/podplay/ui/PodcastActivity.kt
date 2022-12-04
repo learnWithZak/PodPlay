@@ -5,7 +5,6 @@ import android.app.SearchManager
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -16,9 +15,9 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.zak.podplay.R
 import com.zak.podplay.adapter.PodcastListAdapter
 import com.zak.podplay.databinding.ActivityPodcastBinding
-import com.zak.podplay.model.Podcast
 import com.zak.podplay.repository.ItunesRepo
 import com.zak.podplay.repository.PodcastRepo
+import com.zak.podplay.service.FeedService
 import com.zak.podplay.service.ItunesService
 import com.zak.podplay.viewmodel.PodcastViewModel
 import com.zak.podplay.viewmodel.SearchViewModel
@@ -99,7 +98,7 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapter.PodcastListAdapt
     private fun setupViewModels() {
         val service = ItunesService.instance
         searchViewModel.itunesRepo = ItunesRepo(service)
-        podcastViewModel.podcastRepo = PodcastRepo()
+        podcastViewModel.podcastRepo = PodcastRepo(FeedService.instance)
     }
 
     private fun updateControls() {
@@ -117,15 +116,21 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapter.PodcastListAdapt
     }
 
     override fun onShowDetails(podcastSummaryViewData: SearchViewModel.PodcastSummaryViewData) {
-        val feedUrl = podcastSummaryViewData.feedUrl ?: return
-        showProgressBar()
-        val podcast = podcastViewModel.getPodcast(podcastSummaryViewData)
-        hideProgressBar()
-        if (podcast != null) {
-            showDetailsFragment()
-        } else {
-            showError("Error loading feed $feedUrl")
+        podcastSummaryViewData.feedUrl?.let {
+            showProgressBar()
+            podcastViewModel.getPodcast(podcastSummaryViewData)
         }
+    }
+
+    private fun createSubscription() {
+        podcastViewModel.podcastLiveData.observe(this, {
+            hideProgressBar()
+            if (it != null) {
+                showDetailsFragment()
+            } else {
+                showError("Error loading feed")
+            }
+        })
     }
 
     private fun showError(message: String) {

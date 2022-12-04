@@ -3,10 +3,10 @@ package com.zak.podplay.repository
 import com.zak.podplay.model.Episode
 import com.zak.podplay.model.Podcast
 import com.zak.podplay.service.RssFeedResponse
-import com.zak.podplay.service.RssFeedService
+import com.zak.podplay.service.FeedService
 import com.zak.podplay.util.DateUtils.xmlDateToDate
 
-class PodcastRepo(private val feedService: RssFeedService) {
+class PodcastRepo(private val feedService: FeedService) {
 
     suspend fun getPodcast(feedUrl: String): Podcast? {
         var podcast: Podcast? = null
