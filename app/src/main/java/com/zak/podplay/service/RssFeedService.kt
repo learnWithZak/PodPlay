@@ -1,7 +1,7 @@
 package com.zak.podplay.service
 
-
 import com.zak.podplay.BuildConfig
+import com.zak.podplay.util.DateUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -23,8 +23,10 @@ class RssFeedService private constructor() {
 
     suspend fun getFeed(xmlFileURL: String): RssFeedResponse? {
         val service: FeedService
+
         val interceptor = HttpLoggingInterceptor()
         interceptor.level = HttpLoggingInterceptor.Level.BODY
+
         val client = OkHttpClient().newBuilder()
             .connectTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
@@ -40,19 +42,24 @@ class RssFeedService private constructor() {
             .baseUrl("${xmlFileURL.split("?")[0]}/")
             .build()
         service = retrofit.create(FeedService::class.java)
+
         try {
             val result = service.getFeed(xmlFileURL)
-            return if (result.code() >= 400) {
+            if (result.code() >= 400) {
                 println("server error, ${result.code()}, ${result.errorBody()}")
-                null
+                return null
             } else {
-                val rssFeedResponse: RssFeedResponse? = null
+                var rssFeedResponse: RssFeedResponse?
                 val dbFactory = DocumentBuilderFactory.newInstance()
                 val dBuilder = dbFactory.newDocumentBuilder()
                 withContext(Dispatchers.IO) {
                     val doc = dBuilder.parse(result.body()?.byteStream())
+                    val rss = RssFeedResponse(episodes = mutableListOf())
+                    domToRssFeedResponse(doc, rss)
+                    println(rss)
+                    rssFeedResponse = rss
                 }
-                rssFeedResponse
+                return rssFeedResponse
             }
         } catch (t: Throwable) {
             println("error, ${t.localizedMessage}")
@@ -60,6 +67,46 @@ class RssFeedService private constructor() {
         return null
     }
 
+    private fun domToRssFeedResponse(node: Node, rssFeedResponse: RssFeedResponse) {
+        if (node.nodeType == Node.ELEMENT_NODE) {
+            val nodeName = node.nodeName
+            val parentName = node.parentNode.nodeName
+            val grandParentName = node.parentNode.parentNode?.nodeName ?: ""
+            if (parentName == "item" && grandParentName == "channel") {
+                val currentItem = rssFeedResponse.episodes?.last()
+                if (currentItem != null) {
+                    when (nodeName) {
+                        "title" -> currentItem.title = node.textContent
+                        "description" -> currentItem.description = node.textContent
+                        "itunes:duration" -> currentItem.duration = node.textContent
+                        "guid" -> currentItem.guid = node.textContent
+                        "pubDate" -> currentItem.pubDate = node.textContent
+                        "link" -> currentItem.link = node.textContent
+                        "enclosure" -> {
+                            currentItem.url = node.attributes.getNamedItem("url")
+                                .textContent
+                            currentItem.type = node.attributes.getNamedItem("type")
+                                .textContent
+                        }
+                    }
+                }
+            }
+            if (parentName == "channel") {
+                when (nodeName) {
+                    "title" -> rssFeedResponse.title = node.textContent
+                    "description" -> rssFeedResponse.description = node.textContent
+                    "itunes:summary" -> rssFeedResponse.summary = node.textContent
+                    "item" -> rssFeedResponse.episodes?.add(RssFeedResponse.EpisodeResponse())
+                    "pubDate" -> rssFeedResponse.lastUpdated = DateUtils.xmlDateToDate(node.textContent)
+                }
+            }
+        }
+        val nodeList = node.childNodes
+        for (i in 0 until nodeList.length) {
+            val childNode = nodeList.item(i)
+            domToRssFeedResponse(childNode, rssFeedResponse)
+        }
+    }
     companion object {
         val instance: RssFeedService by lazy {
             RssFeedService()
