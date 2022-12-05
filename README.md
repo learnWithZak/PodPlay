@@ -7,6 +7,9 @@ The following new topics are covered:
 3. XML Parsing.
 4. Search activity.
 5. MediaPlayer library.
+6. Room database.
+
+The user has the ability to search for podcasts and displaying the podcast episodes, subscribe to favorite podcasts
 
 ## Functionalities
 
