@@ -1,13 +1,19 @@
 package com.zak.podplay.repository
 
+import androidx.lifecycle.LiveData
+import com.zak.podplay.db.PodcastDao
 import com.zak.podplay.model.Episode
 import com.zak.podplay.model.Podcast
 import com.zak.podplay.service.RssFeedResponse
-import com.zak.podplay.service.FeedService
 import com.zak.podplay.service.RssFeedService
 import com.zak.podplay.util.DateUtils.xmlDateToDate
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
-class PodcastRepo(private var feedService: RssFeedService) {
+class PodcastRepo(
+    private var feedService: RssFeedService,
+    private var podcastDao: PodcastDao
+) {
 
     suspend fun getPodcast(feedUrl: String): Podcast? {
         var podcast: Podcast? = null
@@ -41,5 +47,19 @@ class PodcastRepo(private var feedService: RssFeedService) {
             rssResponse.summary else rssResponse.description
         return Podcast(null, feedUrl, rssResponse.title, description, imageUrl,
             rssResponse.lastUpdated, episodes = rssItemsToEpisodes(items))
+    }
+
+    fun save(podcast: Podcast) {
+        GlobalScope.launch {
+            val podcastId = podcastDao.insertPodcast(podcast)
+            for (episode in podcast.episodes) {
+                episode.podcastId = podcastId
+                podcastDao.insertEpisode(episode)
+            }
+        }
+    }
+
+    fun getAll(): LiveData<List<Podcast>> {
+        return podcastDao.loadPodcasts()
     }
 }

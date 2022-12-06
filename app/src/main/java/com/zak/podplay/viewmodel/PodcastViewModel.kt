@@ -5,6 +5,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.zak.podplay.db.PodPlayDatabase
+import com.zak.podplay.db.PodcastDao
 import com.zak.podplay.model.Episode
 import com.zak.podplay.model.Podcast
 import com.zak.podplay.repository.PodcastRepo
@@ -14,6 +16,7 @@ import java.util.*
 class PodcastViewModel(application: Application) : AndroidViewModel(application) {
 
     var podcastRepo: PodcastRepo? = null
+    val podcastDao: PodcastDao = PodPlayDatabase.getInstance(application, viewModelScope).podcastDao()
     var activePodcastViewData: PodcastViewData? = null
     private val _podcastLiveData = MutableLiveData<PodcastViewData?>()
     val podcastLiveData: LiveData<PodcastViewData?> = _podcastLiveData
