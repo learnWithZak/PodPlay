@@ -26,8 +26,7 @@ class Converters {
 
 @Database(entities = [Podcast::class, Episode::class], version = 1)
 @TypeConverters(Converters::class)
-abstract class PodPlayDatabase: RoomDatabase() {
-
+abstract class PodPlayDatabase : RoomDatabase() {
     abstract fun podcastDao(): PodcastDao
 
     companion object {
@@ -42,10 +41,9 @@ abstract class PodPlayDatabase: RoomDatabase() {
             }
 
             synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
+                val instance = Room.databaseBuilder(context.applicationContext,
                     PodPlayDatabase::class.java,
-                "PodPlayer")
+                    "PodPlayer")
                     .build()
                 INSTANCE = instance
                 return instance
