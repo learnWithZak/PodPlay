@@ -28,7 +28,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class PodcastActivity : AppCompatActivity(), PodcastListAdapter.PodcastListAdapterListener {
+class PodcastActivity : AppCompatActivity(), PodcastListAdapter.PodcastListAdapterListener, PodcastDetailsFragment.OnPodcastDetailsListener {
 
     private val searchViewModel by viewModels<SearchViewModel>()
     private val podcastViewModel by viewModels<PodcastViewModel>()
@@ -76,14 +76,14 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapter.PodcastListAdapt
     }
 
     private fun createSubscription() {
-        podcastViewModel.podcastLiveData.observe(this, {
+        podcastViewModel.podcastLiveData.observe(this) {
             hideProgressBar()
             if (it != null) {
                 showDetailsFragment()
             } else {
                 showError("Error loading feed")
             }
-        })
+        }
     }
 
     override fun onShowDetails(podcastSummaryViewData: SearchViewModel.PodcastSummaryViewData) {
@@ -182,5 +182,10 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapter.PodcastListAdapt
 
     companion object {
         private const val TAG_DETAILS_FRAGMENT = "DetailsFragment"
+    }
+
+    override fun onSubscribe() {
+        podcastViewModel.saveActivePodcast()
+        supportFragmentManager.popBackStack()
     }
 }
