@@ -9,7 +9,6 @@ data class RssFeedResponse(
     var lastUpdated: Date = Date(),
     var episodes: MutableList<EpisodeResponse>? = null
 ) {
-
     data class EpisodeResponse(
         var title: String? = null,
         var link: String? = null,

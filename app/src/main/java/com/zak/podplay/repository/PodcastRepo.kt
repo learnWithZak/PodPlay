@@ -6,16 +6,22 @@ import com.zak.podplay.model.Episode
 import com.zak.podplay.model.Podcast
 import com.zak.podplay.service.RssFeedResponse
 import com.zak.podplay.service.RssFeedService
+import com.zak.podplay.util.DateUtils
 import com.zak.podplay.util.DateUtils.xmlDateToDate
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
-class PodcastRepo(
-    private var feedService: RssFeedService,
-    private var podcastDao: PodcastDao
-) {
+class PodcastRepo(private var feedService: RssFeedService,
+                  private var podcastDao: PodcastDao) {
 
     suspend fun getPodcast(feedUrl: String): Podcast? {
+        val podcastLocal = podcastDao.loadPodcast(feedUrl)
+        if (podcastLocal != null) {
+            podcastLocal.id?.let {
+                podcastLocal.episodes = podcastDao.loadEpisodes(it)
+                return podcastLocal
+            }
+        }
         var podcast: Podcast? = null
         val feedResponse = feedService.getFeed(feedUrl)
         if (feedResponse != null) {
@@ -59,7 +65,14 @@ class PodcastRepo(
         }
     }
 
+    fun delete(podcast: Podcast) {
+        GlobalScope.launch {
+            podcastDao.deletePodcast(podcast)
+        }
+    }
+
     fun getAll(): LiveData<List<Podcast>> {
         return podcastDao.loadPodcasts()
     }
+
 }
