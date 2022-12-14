@@ -17,7 +17,7 @@ PodPlay will contain these main features:
 1. Quick searching of podcasts by keyword or name.
 2. Display for previewing podcast episodes.
 3. Playback of audio and video podcasts.
-4. Subscribing to your favorite podcasts.
+4. Subscribing to your favorite podcasts and notify when new episodes are available (check for new episodes in the background and post a notification if any are found).
 5. Playback at various speeds.
 
 ## Glide library
