@@ -2,9 +2,15 @@ package com.zak.podplay.ui
 
 import android.content.Context
 import android.os.Bundle
+import android.support.v4.media.MediaBrowserCompat
+import android.support.v4.media.MediaMetadataCompat
+import android.support.v4.media.session.MediaControllerCompat
+import android.support.v4.media.session.MediaSessionCompat
+import android.support.v4.media.session.PlaybackStateCompat
 import android.text.method.ScrollingMovementMethod
 import android.view.*
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -20,6 +26,8 @@ class PodcastDetailsFragment : Fragment() {
     private lateinit var databinding: FragmentPodcastDetailsBinding
     private lateinit var episodeListAdapter: EpisodeListAdapter
     private var listener: OnPodcastDetailsListener? = null
+    private lateinit var mediaBrowser: MediaBrowserCompat
+    private var mediaControllerCallback: MediaControllerCallback? = null
 
     companion object {
         fun newInstance(): PodcastDetailsFragment {
@@ -111,5 +119,47 @@ class PodcastDetailsFragment : Fragment() {
     interface OnPodcastDetailsListener {
         fun onSubscribe()
         fun onUnsubscribe()
+    }
+
+    inner class MediaControllerCallback: MediaControllerCompat.Callback() {
+        override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
+            super.onMetadataChanged(metadata)
+            println(
+                "metadata changed to ${metadata?.getString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI)}"
+            )
+        }
+
+        override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
+            super.onPlaybackStateChanged(state)
+            println("state changed to $state")
+        }
+    }
+
+    private fun registerMediaController(token: MediaSessionCompat.Token) {
+        val fragmentActivity = activity as FragmentActivity
+        val mediaController = MediaControllerCompat(fragmentActivity, token)
+        MediaControllerCompat.setMediaController(fragmentActivity, mediaController)
+        mediaControllerCallback = MediaControllerCallback()
+        mediaController.registerCallback(mediaControllerCallback!!)
+    }
+
+    inner class MediaBrowserCallBacks: MediaBrowserCompat.ConnectionCallback() {
+        override fun onConnected() {
+            super.onConnected()
+            registerMediaController(mediaBrowser.sessionToken)
+            println("onConnected")
+        }
+
+        override fun onConnectionSuspended() {
+            super.onConnectionSuspended()
+            println("onConnectionSuspended")
+            // Disable transport controls
+        }
+
+        override fun onConnectionFailed() {
+            super.onConnectionFailed()
+            println("onConnectionFailed")
+            // Fatal error handling
+        }
     }
 }
