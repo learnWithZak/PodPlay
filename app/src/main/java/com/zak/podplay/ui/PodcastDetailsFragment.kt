@@ -178,4 +178,16 @@ class PodcastDetailsFragment : Fragment() {
             null
         )
     }
+
+    override fun onStart() {
+        super.onStart()
+        if (mediaBrowser.isConnected) {
+            val fragmentActivity = activity as FragmentActivity
+            if (MediaControllerCompat.getMediaController(fragmentActivity) == null) {
+                registerMediaController(mediaBrowser.sessionToken)
+            }
+        } else {
+            mediaBrowser.connect()
+        }
+    }
 }
