@@ -1,5 +1,6 @@
 package com.zak.podplay.ui
 
+import android.content.ComponentName
 import android.content.Context
 import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
@@ -18,6 +19,7 @@ import com.bumptech.glide.Glide
 import com.zak.podplay.R
 import com.zak.podplay.adapter.EpisodeListAdapter
 import com.zak.podplay.databinding.FragmentPodcastDetailsBinding
+import com.zak.podplay.service.PodPlayMediaService
 import com.zak.podplay.viewmodel.PodcastViewModel
 
 class PodcastDetailsFragment : Fragment() {
@@ -38,6 +40,7 @@ class PodcastDetailsFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(true)
+        initMediaBrowser()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
@@ -161,5 +164,18 @@ class PodcastDetailsFragment : Fragment() {
             println("onConnectionFailed")
             // Fatal error handling
         }
+    }
+
+    private fun initMediaBrowser() {
+        val fragmentActivity = activity as FragmentActivity
+        mediaBrowser = MediaBrowserCompat(
+            fragmentActivity,
+            ComponentName(
+                fragmentActivity,
+                PodPlayMediaService::class.java
+            ),
+            MediaBrowserCallBacks(),
+            null
+        )
     }
 }
