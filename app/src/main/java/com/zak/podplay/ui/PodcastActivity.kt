@@ -13,6 +13,7 @@ import androidx.appcompat.widget.SearchView
 import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.work.*
 import com.zak.podplay.R
 import com.zak.podplay.adapter.PodcastListAdapter
 import com.zak.podplay.databinding.ActivityPodcastBinding
@@ -23,13 +24,20 @@ import com.zak.podplay.service.ItunesService
 import com.zak.podplay.service.RssFeedService
 import com.zak.podplay.viewmodel.PodcastViewModel
 import com.zak.podplay.viewmodel.SearchViewModel
+import com.zak.podplay.worker.EpisodeUpdateWorker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.concurrent.TimeUnit
 
 class PodcastActivity : AppCompatActivity(), PodcastListAdapter.PodcastListAdapterListener,
     PodcastDetailsFragment.OnPodcastDetailsListener {
+
+    companion object {
+        private const val TAG_DETAILS_FRAGMENT = "DetailsFragment"
+        private const val TAG_EPISODE_UPDATE_JOB = "com.zak.podplay.episodes"
+    }
 
     private val searchViewModel by viewModels<SearchViewModel>()
     private val podcastViewModel by viewModels<PodcastViewModel>()
@@ -47,6 +55,7 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapter.PodcastListAdapt
         setupPodcastListView()
         handleIntent(intent)
         addBackStackListener()
+        scheduleJobs()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -197,10 +206,6 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapter.PodcastListAdapt
         databinding.progressBar.visibility = View.INVISIBLE
     }
 
-    companion object {
-        private const val TAG_DETAILS_FRAGMENT = "DetailsFragment"
-    }
-
     override fun onSubscribe() {
         podcastViewModel.saveActivePodcast()
         supportFragmentManager.popBackStack()
@@ -209,5 +214,23 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapter.PodcastListAdapt
     override fun onUnsubscribe() {
         podcastViewModel.deleteActivePodcast()
         supportFragmentManager.popBackStack()
+    }
+
+    private fun scheduleJobs() {
+        val constraints: Constraints = Constraints.Builder().apply {
+            setRequiredNetworkType(NetworkType.CONNECTED)
+            setRequiresCharging(true)
+        }.build()
+
+        val request = PeriodicWorkRequestBuilder<EpisodeUpdateWorker>(
+            1, TimeUnit.HOURS)
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            TAG_EPISODE_UPDATE_JOB,
+            ExistingPeriodicWorkPolicy.REPLACE,
+            request
+        )
     }
 }
