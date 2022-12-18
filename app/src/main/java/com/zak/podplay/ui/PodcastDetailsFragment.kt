@@ -190,4 +190,14 @@ class PodcastDetailsFragment : Fragment() {
             mediaBrowser.connect()
         }
     }
+
+    override fun onStop() {
+        super.onStop()
+        val fragmentActivity = activity as FragmentActivity
+        if (MediaControllerCompat.getMediaController(fragmentActivity) != null) {
+            mediaControllerCallback?.let {
+                MediaControllerCompat.getMediaController(fragmentActivity).unregisterCallback(it)
+            }
+        }
+    }
 }
