@@ -9,6 +9,10 @@ class PodPlayMediaService: MediaBrowserServiceCompat() {
 
     private lateinit var mediaSession: MediaSessionCompat
 
+    companion object {
+        private const val PODPLAY_EMPTY_ROOT_MEDIA_ID = "podPlay_empty_root_media_id"
+    }
+
     override fun onCreate() {
         super.onCreate()
         createMediaSession()
@@ -19,14 +23,16 @@ class PodPlayMediaService: MediaBrowserServiceCompat() {
         clientUid: Int,
         rootHints: Bundle?
     ): BrowserRoot? {
-        TODO("Not yet implemented")
+        return BrowserRoot(PODPLAY_EMPTY_ROOT_MEDIA_ID, null)
     }
 
     override fun onLoadChildren(
         parentId: String,
         result: Result<MutableList<MediaBrowserCompat.MediaItem>>
     ) {
-        TODO("Not yet implemented")
+        if (parentId == PODPLAY_EMPTY_ROOT_MEDIA_ID) {
+            result.sendResult(null)
+        }
     }
 
     private fun createMediaSession() {
