@@ -4,7 +4,6 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
-import android.media.MediaMetadata
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Build
@@ -23,6 +22,13 @@ class PodPlayMediaCallback(
     private var newMedia: Boolean = false
     private var mediaExtras: Bundle? = null
     private var focusRequest: AudioFocusRequest? = null
+    var listener: PodPlayMediaListener? = null
+
+    interface PodPlayMediaListener {
+        fun onStateChanged()
+        fun onStopPlaying()
+        fun onPausePlaying()
+    }
 
     override fun onPlayFromUri(uri: Uri?, extras: Bundle?) {
         super.onPlayFromUri(uri, extras)
@@ -76,6 +82,9 @@ class PodPlayMediaCallback(
             .build()
 
         mediaSession.setPlaybackState(playbackState)
+        if (state == PlaybackStateCompat.STATE_PAUSED || state == PlaybackStateCompat.STATE_PLAYING) {
+            listener?.onStateChanged()
+        }
     }
 
     private fun setNewMedia(uri: Uri?) {
@@ -160,6 +169,7 @@ class PodPlayMediaCallback(
                 setState(PlaybackStateCompat.STATE_PAUSED)
             }
         }
+        listener?.onPausePlaying()
     }
 
     private fun stopPlaying() {
@@ -171,5 +181,6 @@ class PodPlayMediaCallback(
                 setState(PlaybackStateCompat.STATE_STOPPED)
             }
         }
+        listener?.onStopPlaying()
     }
 }
