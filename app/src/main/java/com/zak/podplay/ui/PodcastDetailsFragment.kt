@@ -2,6 +2,7 @@ package com.zak.podplay.ui
 
 import android.content.ComponentName
 import android.content.Context
+import android.net.Uri
 import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaMetadataCompat
@@ -18,11 +19,12 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.zak.podplay.R
 import com.zak.podplay.adapter.EpisodeListAdapter
+import com.zak.podplay.adapter.EpisodeListAdapterListener
 import com.zak.podplay.databinding.FragmentPodcastDetailsBinding
 import com.zak.podplay.service.PodPlayMediaService
 import com.zak.podplay.viewmodel.PodcastViewModel
 
-class PodcastDetailsFragment : Fragment() {
+class PodcastDetailsFragment : Fragment(), EpisodeListAdapterListener {
 
     private val podcastViewModel: PodcastViewModel by activityViewModels()
     private lateinit var databinding: FragmentPodcastDetailsBinding
@@ -70,7 +72,7 @@ class PodcastDetailsFragment : Fragment() {
                     databinding.episodeRecyclerView.context, layoutManager.orientation
                 )
                 databinding.episodeRecyclerView.addItemDecoration(dividerItemDecoration)
-                episodeListAdapter = EpisodeListAdapter(viewData.episodes)
+                episodeListAdapter = EpisodeListAdapter(viewData.episodes, this)
                 databinding.episodeRecyclerView.adapter = episodeListAdapter
 
                 activity?.invalidateOptionsMenu()
@@ -198,6 +200,26 @@ class PodcastDetailsFragment : Fragment() {
             mediaControllerCallback?.let {
                 MediaControllerCompat.getMediaController(fragmentActivity).unregisterCallback(it)
             }
+        }
+    }
+
+    private fun startPlaying(episodeViewData: PodcastViewModel.EpisodeViewData) {
+        val fragmentActivity = activity as FragmentActivity
+        val controller = MediaControllerCompat.getMediaController(fragmentActivity)
+        controller.transportControls.playFromUri(Uri.parse(episodeViewData.mediaUrl), null)
+    }
+
+    override fun onSelectedEpisode(episodeViewData: PodcastViewModel.EpisodeViewData) {
+        val fragmentActivity = activity as FragmentActivity
+        val controller = MediaControllerCompat.getMediaController(fragmentActivity)
+        if (controller.playbackState != null) {
+            if (controller.playbackState.state == PlaybackStateCompat.STATE_PLAYING) {
+                controller.transportControls.pause()
+            } else {
+                startPlaying(episodeViewData)
+            }
+        } else {
+            startPlaying(episodeViewData)
         }
     }
 }

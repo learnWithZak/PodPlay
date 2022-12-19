@@ -9,13 +9,28 @@ import com.zak.podplay.util.DateUtils.dateToShortDate
 import com.zak.podplay.util.HtmlUtils
 import com.zak.podplay.viewmodel.PodcastViewModel
 
+interface EpisodeListAdapterListener {
+    fun onSelectedEpisode(episodeViewData: PodcastViewModel.EpisodeViewData)
+}
+
 class EpisodeListAdapter(
-    private var episodeViewList: List<PodcastViewModel.EpisodeViewData>?
+    private var episodeViewList: List<PodcastViewModel.EpisodeViewData>?,
+    private val episodeListAdapterListener: EpisodeListAdapterListener
 ) : RecyclerView.Adapter<EpisodeListAdapter.ViewHolder>() {
 
     inner class ViewHolder(
-        dataBinding: EpisodeItemBinding
+        dataBinding: EpisodeItemBinding,
+        val episodeListAdapterListener: EpisodeListAdapterListener
     ) : RecyclerView.ViewHolder(dataBinding.root) {
+
+        init {
+            dataBinding.root.setOnClickListener {
+                episodeViewData?.let {
+                    episodeListAdapterListener.onSelectedEpisode(it)
+                }
+            }
+        }
+
         var episodeViewData: PodcastViewModel.EpisodeViewData? = null
         val titleTextView: TextView = dataBinding.titleView
         val descTextView: TextView = dataBinding.descView
@@ -27,7 +42,7 @@ class EpisodeListAdapter(
         parent: ViewGroup, viewType: Int
     ): EpisodeListAdapter.ViewHolder {
         return ViewHolder(EpisodeItemBinding.inflate(
-            LayoutInflater.from(parent.context), parent, false))
+            LayoutInflater.from(parent.context), parent, false), episodeListAdapterListener)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
