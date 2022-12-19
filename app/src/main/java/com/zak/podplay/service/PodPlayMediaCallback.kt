@@ -15,6 +15,10 @@ class PodPlayMediaCallback(
     var mediaPlayer: MediaPlayer? = null
 ): MediaSessionCompat.Callback() {
 
+    private var mediaUri: Uri? = null
+    private var newMedia: Boolean = false
+    private var mediaExtras: Bundle? = null
+
     override fun onPlayFromUri(uri: Uri?, extras: Bundle?) {
         super.onPlayFromUri(uri, extras)
         println("Playing ${uri.toString()}")
@@ -58,5 +62,10 @@ class PodPlayMediaCallback(
             .build()
 
         mediaSession.setPlaybackState(playbackState)
+    }
+
+    private fun setNewMedia(uri: Uri?) {
+        newMedia = true
+        mediaUri = uri
     }
 }
