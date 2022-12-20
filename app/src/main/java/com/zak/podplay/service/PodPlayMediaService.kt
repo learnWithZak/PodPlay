@@ -162,4 +162,9 @@ class PodPlayMediaService: MediaBrowserServiceCompat(), PodPlayMediaCallback.Pod
     override fun onPausePlaying() {
         stopForeground(false)
     }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        mediaSession.controller.transportControls.stop()
+    }
 }

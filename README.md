@@ -19,6 +19,7 @@ PodPlay will contain these main features:
 3. Playback of audio and video podcasts.
 4. Subscribing to your favorite podcasts and notify when new episodes are available (check for new episodes in the background and post a notification if any are found).
 5. Playback at various speeds.
+6. The user can tap on an episode to start it playing and a notification icon will be displayed in the status bar. He could also tap on the pause button to pause the playback.
 
 ## Glide library
 
