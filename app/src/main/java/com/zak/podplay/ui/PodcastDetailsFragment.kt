@@ -124,6 +124,7 @@ class PodcastDetailsFragment : Fragment(), EpisodeListAdapterListener {
     interface OnPodcastDetailsListener {
         fun onSubscribe()
         fun onUnsubscribe()
+        fun onShowEpisodePlayer(episodeViewData: PodcastViewModel.EpisodeViewData)
     }
 
     inner class MediaControllerCallback: MediaControllerCompat.Callback() {
@@ -215,16 +216,6 @@ class PodcastDetailsFragment : Fragment(), EpisodeListAdapterListener {
     }
 
     override fun onSelectedEpisode(episodeViewData: PodcastViewModel.EpisodeViewData) {
-        val fragmentActivity = activity as FragmentActivity
-        val controller = MediaControllerCompat.getMediaController(fragmentActivity)
-        if (controller.playbackState != null) {
-            if (controller.playbackState.state == PlaybackStateCompat.STATE_PLAYING) {
-                controller.transportControls.pause()
-            } else {
-                startPlaying(episodeViewData)
-            }
-        } else {
-            startPlaying(episodeViewData)
-        }
+        listener?.onShowEpisodePlayer(episodeViewData)
     }
 }
