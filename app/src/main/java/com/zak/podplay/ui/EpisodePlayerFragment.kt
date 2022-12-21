@@ -2,6 +2,7 @@ package com.zak.podplay.ui
 
 import android.content.ComponentName
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaMetadataCompat
@@ -17,6 +18,8 @@ import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.activityViewModels
 import com.bumptech.glide.Glide
 import com.zak.podplay.databinding.FragmentEpisodePlayerBinding
+import com.zak.podplay.service.PodPlayMediaCallback.Companion.CMD_CHANGE_SPEED
+import com.zak.podplay.service.PodPlayMediaCallback.Companion.CMD_EXTRA_SPEED
 import com.zak.podplay.service.PodPlayMediaService
 import com.zak.podplay.util.HtmlUtils
 import com.zak.podplay.viewmodel.PodcastViewModel
@@ -27,6 +30,7 @@ class EpisodePlayerFragment : Fragment() {
     private val podcastViewModel: PodcastViewModel by activityViewModels()
     private lateinit var mediaBrowser: MediaBrowserCompat
     private var mediaControllerCallback: MediaControllerCallback? = null
+    private var playerSpeed: Float = 1.0f
 
     companion object {
         fun newInstance(): EpisodePlayerFragment {
@@ -84,6 +88,8 @@ class EpisodePlayerFragment : Fragment() {
         Glide.with(fragmentActivity)
             .load(podcastViewModel.podcastLiveData.value?.imageUrl)
             .into(databinding.episodeImageView)
+        val speedButtonText = "${playerSpeed}x"
+        databinding.speedButton.text = speedButtonText
     }
 
     private fun startPlaying(episodeViewData: PodcastViewModel.EpisodeViewData) {
@@ -172,10 +178,32 @@ class EpisodePlayerFragment : Fragment() {
         databinding.playToggleButton.setOnClickListener {
             togglePlayPause()
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            databinding.speedButton.setOnClickListener {
+                changeSpeed()
+            }
+        } else {
+            databinding.speedButton.visibility = View.INVISIBLE
+        }
+
     }
 
     private fun handleStateChange(state: Int) {
         val isPlaying = state == PlaybackStateCompat.STATE_PLAYING
         databinding.playToggleButton.isActivated = isPlaying
+    }
+
+    private fun changeSpeed() {
+        playerSpeed += 0.25f
+        if (playerSpeed > 2.0f) {
+            playerSpeed = 0.75f
+        }
+        val bundle = Bundle()
+        bundle.putFloat(CMD_EXTRA_SPEED, playerSpeed)
+        val fragmentActivity = activity as FragmentActivity
+        val controller = MediaControllerCompat.getMediaController(fragmentActivity)
+        controller.sendCommand(CMD_CHANGE_SPEED, bundle, null)
+        val speedButtonText = "${playerSpeed}x"
+        databinding.speedButton.text = speedButtonText
     }
 }
