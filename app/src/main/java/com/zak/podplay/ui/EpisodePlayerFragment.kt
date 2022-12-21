@@ -48,6 +48,7 @@ class EpisodePlayerFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupControls()
         updateControls()
     }
 
@@ -127,6 +128,8 @@ class EpisodePlayerFragment : Fragment() {
         override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
             super.onPlaybackStateChanged(state)
             println("state changed to $state")
+            val state = state ?: return
+            handleStateChange(state.state)
         }
     }
 
@@ -149,5 +152,30 @@ class EpisodePlayerFragment : Fragment() {
         MediaControllerCompat.setMediaController(fragmentActivity, mediaController)
         mediaControllerCallback = MediaControllerCallback()
         mediaController.registerCallback(mediaControllerCallback!!)
+    }
+
+    private fun togglePlayPause() {
+        val fragmentActivity = activity as FragmentActivity
+        val controller = MediaControllerCompat.getMediaController(fragmentActivity)
+        if (controller.playbackState != null) {
+            if (controller.playbackState.state == PlaybackStateCompat.STATE_PLAYING) {
+                controller.transportControls.pause()
+            } else {
+                podcastViewModel.activeEpisodeViewData?.let { startPlaying(it) }
+            }
+        } else {
+            podcastViewModel.activeEpisodeViewData?.let { startPlaying(it) }
+        }
+    }
+
+    private fun setupControls() {
+        databinding.playToggleButton.setOnClickListener {
+            togglePlayPause()
+        }
+    }
+
+    private fun handleStateChange(state: Int) {
+        val isPlaying = state == PlaybackStateCompat.STATE_PLAYING
+        databinding.playToggleButton.isActivated = isPlaying
     }
 }
