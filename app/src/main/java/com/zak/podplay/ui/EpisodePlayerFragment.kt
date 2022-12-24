@@ -3,6 +3,8 @@ package com.zak.podplay.ui
 import android.animation.ValueAnimator
 import android.content.ComponentName
 import android.content.Context
+import android.media.AudioAttributes
+import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -23,6 +25,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.activityViewModels
 import com.bumptech.glide.Glide
 import com.zak.podplay.databinding.FragmentEpisodePlayerBinding
+import com.zak.podplay.service.PodPlayMediaCallback
 import com.zak.podplay.service.PodPlayMediaCallback.Companion.CMD_CHANGE_SPEED
 import com.zak.podplay.service.PodPlayMediaCallback.Companion.CMD_EXTRA_SPEED
 import com.zak.podplay.service.PodPlayMediaService
@@ -40,6 +43,8 @@ class EpisodePlayerFragment : Fragment() {
     private var draggingScrubber: Boolean = false
     private var progressAnimator: ValueAnimator? = null
     private var mediaSession: MediaSessionCompat? = null
+    private var mediaPlayer: MediaPlayer? = null
+    private var playOnPrepare: Boolean = false
 
     companion object {
         fun newInstance(): EpisodePlayerFragment {
@@ -174,6 +179,7 @@ class EpisodePlayerFragment : Fragment() {
     }
 
     private fun togglePlayPause() {
+        playOnPrepare = true
         val fragmentActivity = activity as FragmentActivity
         val controller = MediaControllerCompat.getMediaController(fragmentActivity)
         if (controller.playbackState != null) {
@@ -315,6 +321,60 @@ class EpisodePlayerFragment : Fragment() {
         }
         mediaSession?.let {
             registerMediaController(it.sessionToken)
+        }
+    }
+
+    private fun setSurfaceSize() {
+        val mediaPlayer = mediaPlayer ?: return
+
+        val videoWidth = mediaPlayer.videoWidth
+        val videoHeight = mediaPlayer.videoHeight
+
+        val parent = databinding.videoSurfaceView.parent as View
+        val containerWidth = parent.width
+        val containerHeight = parent.height
+
+        val layoutAspectRatio = containerWidth.toFloat() / containerHeight
+        val videoAspectRatio = videoWidth.toFloat() / videoHeight
+
+        val layoutParams = databinding.videoSurfaceView.layoutParams
+
+        if (videoAspectRatio > layoutAspectRatio) {
+            layoutParams.height = (containerWidth / videoAspectRatio).toInt()
+        } else {
+            layoutParams.width = (containerHeight * videoAspectRatio).toInt()
+        }
+
+        databinding.videoSurfaceView.layoutParams = layoutParams
+    }
+
+    private fun initMediaPlayer() {
+        if (mediaPlayer == null) {
+            mediaPlayer = MediaPlayer()
+            mediaPlayer?.let { mediaPlayer ->
+                mediaPlayer.setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .build()
+                )
+
+                mediaPlayer.setDataSource(podcastViewModel.activeEpisodeViewData?.mediaUrl)
+                mediaPlayer.setOnPreparedListener {
+                    val fragmentActivity = activity as FragmentActivity
+                    mediaSession?.let { mediaSession ->
+                        val episodeMediaCallback = PodPlayMediaCallback(fragmentActivity, mediaSession, it)
+                        mediaSession.setCallback(episodeMediaCallback)
+                    }
+                    setSurfaceSize()
+                    if (playOnPrepare) {
+                        togglePlayPause()
+                    }
+                }
+                mediaPlayer.prepareAsync()
+            }
+        } else {
+            setSurfaceSize()
         }
     }
 }
