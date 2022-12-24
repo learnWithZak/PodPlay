@@ -83,7 +83,7 @@ class PodcastViewModel(application: Application) : AndroidViewModel(application)
 
     private fun episodesToEpisodesView(episodes: List<Episode>): List<EpisodeViewData> {
         return episodes.map {
-            EpisodeViewData(it.guid, it.title, it.description, it.mediaUrl, it.releaseDate, it.duration)
+            EpisodeViewData(it.guid, it.title, it.description, it.mediaUrl, it.releaseDate, it.duration, isVideo)
         }
     }
 
@@ -112,5 +112,6 @@ class PodcastViewModel(application: Application) : AndroidViewModel(application)
 
     data class EpisodeViewData(var guid: String? = "", var title: String? = "",
                                var description: String? = "", var mediaUrl: String? = "",
-                               var releaseDate: Date? = null, var duration: String? = "")
+                               var releaseDate: Date? = null, var duration: String? = "",
+                               var isVideo: Boolean = false)
 }

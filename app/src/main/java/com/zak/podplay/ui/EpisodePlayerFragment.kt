@@ -2,6 +2,7 @@ package com.zak.podplay.ui
 
 import android.animation.ValueAnimator
 import android.content.ComponentName
+import android.content.Context
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -38,6 +39,7 @@ class EpisodePlayerFragment : Fragment() {
     private var episodeDuration: Long = 0
     private var draggingScrubber: Boolean = false
     private var progressAnimator: ValueAnimator? = null
+    private var mediaSession: MediaSessionCompat? = null
 
     companion object {
         fun newInstance(): EpisodePlayerFragment {
@@ -303,6 +305,16 @@ class EpisodePlayerFragment : Fragment() {
                     controller.playbackState.position, playerSpeed)
                 updateControlsFromMetadata(controller.metadata)
             }
+        }
+    }
+
+    private fun initMediaSession() {
+        if (mediaSession == null) {
+            mediaSession = MediaSessionCompat(activity as Context, "EpisodePlayerFragment")
+            mediaSession?.setMediaButtonReceiver(null)
+        }
+        mediaSession?.let {
+            registerMediaController(it.sessionToken)
         }
     }
 }
