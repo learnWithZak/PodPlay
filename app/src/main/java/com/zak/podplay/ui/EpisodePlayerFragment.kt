@@ -1,5 +1,6 @@
 package com.zak.podplay.ui
 
+import android.animation.ValueAnimator
 import android.content.ComponentName
 import android.net.Uri
 import android.os.Build
@@ -9,10 +10,13 @@ import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import android.text.format.DateUtils
 import android.text.method.ScrollingMovementMethod
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.LinearInterpolator
+import android.widget.SeekBar
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.activityViewModels
@@ -31,6 +35,9 @@ class EpisodePlayerFragment : Fragment() {
     private lateinit var mediaBrowser: MediaBrowserCompat
     private var mediaControllerCallback: MediaControllerCallback? = null
     private var playerSpeed: Float = 1.0f
+    private var episodeDuration: Long = 0
+    private var draggingScrubber: Boolean = false
+    private var progressAnimator: ValueAnimator? = null
 
     companion object {
         fun newInstance(): EpisodePlayerFragment {
@@ -63,6 +70,7 @@ class EpisodePlayerFragment : Fragment() {
             if (MediaControllerCompat.getMediaController(fragmentActivity) == null) {
                 registerMediaController(mediaBrowser.sessionToken)
             }
+            updateControlsFromController()
         } else {
             mediaBrowser.connect()
         }
@@ -70,6 +78,7 @@ class EpisodePlayerFragment : Fragment() {
 
     override fun onStop() {
         super.onStop()
+        progressAnimator?.cancel()
         val fragmentActivity = activity as FragmentActivity
         if (MediaControllerCompat.getMediaController(fragmentActivity) != null) {
             mediaControllerCallback?.let {
@@ -108,6 +117,7 @@ class EpisodePlayerFragment : Fragment() {
             super.onConnected()
             registerMediaController(mediaBrowser.sessionToken)
             println("onConnected")
+            updateControlsFromController()
         }
 
         override fun onConnectionSuspended() {
@@ -129,13 +139,14 @@ class EpisodePlayerFragment : Fragment() {
             println(
                 "metadata changed to ${metadata?.getString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI)}"
             )
+            metadata?.let { updateControlsFromMetadata(it) }
         }
 
         override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
             super.onPlaybackStateChanged(state)
             println("state changed to $state")
             val state = state ?: return
-            handleStateChange(state.state)
+            handleStateChange(state.state, state.position, state.playbackSpeed)
         }
     }
 
@@ -193,11 +204,45 @@ class EpisodePlayerFragment : Fragment() {
         databinding.replayButton.setOnClickListener {
             seekBy(-10)
         }
+
+        databinding.seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                databinding.currentTimeTextView.text = DateUtils.formatElapsedTime((progress / 1000).toLong())
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar) {
+                draggingScrubber = true
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar) {
+                draggingScrubber = false
+                val fragmentActivity = activity as FragmentActivity
+                val controller = MediaControllerCompat.getMediaController(fragmentActivity)
+                if (controller.playbackState != null) {
+                    controller.transportControls.seekTo(seekBar.progress.toLong())
+                } else {
+                    seekBar.progress = 0
+                }
+            }
+
+        })
     }
 
-    private fun handleStateChange(state: Int) {
+    private fun handleStateChange(state: Int, position: Long, speed: Float) {
+        progressAnimator?.let {
+            it.cancel()
+            progressAnimator = null
+        }
         val isPlaying = state == PlaybackStateCompat.STATE_PLAYING
         databinding.playToggleButton.isActivated = isPlaying
+        val progress = position.toInt()
+        databinding.seekBar.progress = progress
+        val speedButtonText = "${playerSpeed}x"
+        databinding.speedButton.text = speedButtonText
+
+        if (isPlaying) {
+            animateScrubber(progress, speed)
+        }
     }
 
     private fun changeSpeed() {
@@ -219,5 +264,45 @@ class EpisodePlayerFragment : Fragment() {
         val controller = MediaControllerCompat.getMediaController(fragmentActivity)
         val newPosition = controller.playbackState.position + seconds * 1000
         controller.transportControls.seekTo(newPosition)
+    }
+
+    private fun updateControlsFromMetadata(metadata: MediaMetadataCompat) {
+        episodeDuration = metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION)
+        databinding.endTimeTextView.text = DateUtils.formatElapsedTime((episodeDuration / 1000))
+        databinding.seekBar.max = episodeDuration.toInt()
+    }
+
+    private fun animateScrubber(progress: Int, speed: Float) {
+        val timeRemaining = ((episodeDuration - progress) / speed).toInt()
+        if (timeRemaining < 0) {
+            return
+        }
+        progressAnimator = ValueAnimator.ofInt(
+            progress, episodeDuration.toInt())
+        progressAnimator?.let { animator ->
+            animator.duration = timeRemaining.toLong()
+            animator.interpolator = LinearInterpolator()
+            animator.addUpdateListener {
+                if (draggingScrubber) {
+                    animator.cancel()
+                } else {
+                    databinding.seekBar.progress = animator.animatedValue as Int
+                }
+            }
+            animator.start()
+        }
+    }
+
+    private fun updateControlsFromController() {
+        val fragmentActivity = activity as FragmentActivity
+        val controller = MediaControllerCompat.getMediaController(fragmentActivity)
+        if (controller != null) {
+            val metadata = controller.metadata
+            if (metadata != null) {
+                handleStateChange(controller.playbackState.state,
+                    controller.playbackState.position, playerSpeed)
+                updateControlsFromMetadata(controller.metadata)
+            }
+        }
     }
 }
