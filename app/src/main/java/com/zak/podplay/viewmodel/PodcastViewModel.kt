@@ -19,11 +19,23 @@ class PodcastViewModel(application: Application) : AndroidViewModel(application)
     var livePodcastSummaryData: LiveData<List<PodcastSummaryViewData>>? = null
     var activeEpisodeViewData: EpisodeViewData? = null
 
-    val podcastDao : PodcastDao = PodPlayDatabase
+    val podcastDao: PodcastDao = PodPlayDatabase
         .getInstance(application, viewModelScope)
         .podcastDao()
 
     private var activePodcast: Podcast? = null
+
+    suspend fun setActivePodcast(feedUrl: String): PodcastSummaryViewData? {
+        val repo = podcastRepo ?: return null
+        val podcast = repo.getPodcast(feedUrl)
+        return if (podcast == null) {
+            null
+        } else {
+            _podcastLiveData.value = podcastToPodcastView(podcast)
+            activePodcast = podcast
+            podcastToSummaryView(podcast)
+        }
+    }
 
     suspend fun getPodcast(podcastSummaryViewData: PodcastSummaryViewData) {
         podcastSummaryViewData.feedUrl?.let { url ->
@@ -83,6 +95,7 @@ class PodcastViewModel(application: Application) : AndroidViewModel(application)
 
     private fun episodesToEpisodesView(episodes: List<Episode>): List<EpisodeViewData> {
         return episodes.map {
+            val isVideo = it.mimeType.startsWith("video")
             EpisodeViewData(it.guid, it.title, it.description, it.mediaUrl, it.releaseDate, it.duration, isVideo)
         }
     }
@@ -94,24 +107,18 @@ class PodcastViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    suspend fun setActivePodcast(feedUrl: String): PodcastSummaryViewData? {
-        val repo = podcastRepo ?: return null
-        val podcast = repo.getPodcast(feedUrl)
-        return if (podcast == null) {
-            null
-        } else {
-            _podcastLiveData.value = podcastToPodcastView(podcast)
-            activePodcast = podcast
-            podcastToSummaryView(podcast)
-        }
-    }
+    data class PodcastViewData(var subscribed: Boolean = false,
+                               var feedTitle: String? = "",
+                               var feedUrl: String? = "",
+                               var feedDesc: String? = "",
+                               var imageUrl: String? = "",
+                               var episodes: List<EpisodeViewData>)
 
-    data class PodcastViewData(var subscribed: Boolean = false, var feedTitle: String? = "",
-                               var feedUrl: String? = "", var feedDesc: String? = "",
-                               var imageUrl: String? = "", var episodes: List<EpisodeViewData>)
-
-    data class EpisodeViewData(var guid: String? = "", var title: String? = "",
-                               var description: String? = "", var mediaUrl: String? = "",
-                               var releaseDate: Date? = null, var duration: String? = "",
+    data class EpisodeViewData(var guid: String? = "",
+                               var title: String? = "",
+                               var description: String? = "",
+                               var mediaUrl: String? = "",
+                               var releaseDate: Date? = null,
+                               var duration: String? = "",
                                var isVideo: Boolean = false)
 }
