@@ -186,6 +186,13 @@ class EpisodePlayerFragment : Fragment() {
             databinding.speedButton.visibility = View.INVISIBLE
         }
 
+        databinding.forwardButton.setOnClickListener {
+            seekBy(30)
+        }
+
+        databinding.replayButton.setOnClickListener {
+            seekBy(-10)
+        }
     }
 
     private fun handleStateChange(state: Int) {
