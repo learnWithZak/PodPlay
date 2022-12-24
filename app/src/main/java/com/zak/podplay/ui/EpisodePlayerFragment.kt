@@ -206,4 +206,11 @@ class EpisodePlayerFragment : Fragment() {
         val speedButtonText = "${playerSpeed}x"
         databinding.speedButton.text = speedButtonText
     }
+
+    private fun seekBy(seconds: Int) {
+        val fragmentActivity = activity as FragmentActivity
+        val controller = MediaControllerCompat.getMediaController(fragmentActivity)
+        val newPosition = controller.playbackState.position + seconds * 1000
+        controller.transportControls.seekTo(newPosition)
+    }
 }
